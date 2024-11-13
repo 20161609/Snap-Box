@@ -6,13 +6,14 @@ import { jsPDF } from "jspdf";
 export default function Home() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0); // 진행 상황 상태 추가
+  const [progress, setProgress] = useState(0);
+  const [startNumber, setStartNumber] = useState(1);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const validImages = files.filter((file) => file.type.startsWith("image/"));
     setImages(validImages);
-    setProgress(0); // 새 파일을 선택할 때 진행 상태 초기화
+    setProgress(0);
   };
 
   const handleGeneratePDF = async () => {
@@ -48,6 +49,8 @@ export default function Home() {
     try {
       const imgDataList = await Promise.all(imagePromises);
 
+      let currentNumber = parseInt(startNumber);
+
       for (let i = 0; i < imgDataList.length; i += 4) {
         if (i > 0) pdf.addPage();
 
@@ -78,7 +81,18 @@ export default function Home() {
                 imgHeight
               );
 
-              // 이미지 처리 완료 시 진행 상태 업데이트
+              // 이미지 하단에 번호 추가
+              const text = `#${currentNumber}`;
+              const textWidth = pdf.getTextWidth(text);
+              const textX = x + (maxWidth - textWidth) / 2;
+              const textY = offsetY + imgHeight + 15;
+
+              pdf.setFontSize(12);
+              pdf.text(text, textX, textY);
+
+              currentNumber++;
+
+              // 진행 상태 업데이트
               const totalImages = imgDataList.length;
               const completed = i + j + 1;
               setProgress(Math.round((completed / totalImages) * 100));
@@ -98,7 +112,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center p-8 gap-4 min-h-screen bg-gray-100">
       <h1 className="text-3xl font-extrabold text-gray-800 mb-6">Snap Box</h1>
-      
+
       <input
         type="file"
         accept="image/*"
@@ -106,29 +120,43 @@ export default function Home() {
         onChange={handleFileChange}
         className="file-input mb-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg cursor-pointer shadow-lg focus:outline-none hover:bg-gray-200"
       />
-      
+
       {images.length > 0 && (
-        <button
-          onClick={handleGeneratePDF}
-          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-500 transition"
-        >
-          PDF 다운로드
-        </button>
+        <>
+          <input
+            type="number"
+            value={startNumber}
+            onChange={(e) => setStartNumber(e.target.value)}
+            placeholder="시작 번호를 입력하세요"
+            className="mb-4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black placeholder:text-black"
+          />
+
+          <button
+            onClick={handleGeneratePDF}
+            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-500 transition"
+          >
+            PDF 다운로드
+          </button>
+        </>
       )}
-      
+
       <ul className="list-disc mt-4 text-gray-700">
         {images.map((image, index) => (
-          <li key={index} className="font-medium">{image.name}</li>
+          <li key={index} className="font-medium">
+            {image.name}
+          </li>
         ))}
       </ul>
 
       {loading && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex flex-col items-center justify-center z-50">
           <div className="loader mb-4"></div>
-          <p className="text-white font-semibold mb-2">PDF 생성 중... {progress}%</p>
+          <p className="text-white font-semibold mb-2">
+            PDF 생성 중... {progress}%
+          </p>
         </div>
       )}
-      
+
       <style jsx>{`
         .file-input {
           border: 2px dashed #cbd5e1;
