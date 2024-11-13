@@ -8,6 +8,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [startNumber, setStartNumber] = useState(1);
+  const [includeNumbering, setIncludeNumbering] = useState(true); // 번호 매기기 여부 상태 추가
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -81,16 +82,18 @@ export default function Home() {
                 imgHeight
               );
 
-              // 이미지 하단에 번호 추가
-              const text = `#${currentNumber}`;
-              const textWidth = pdf.getTextWidth(text);
-              const textX = x + (maxWidth - textWidth) / 2;
-              const textY = offsetY + imgHeight + 15;
+              // 번호 매기기가 활성화된 경우에만 번호 추가
+              if (includeNumbering) {
+                const text = `#${currentNumber}`;
+                const textWidth = pdf.getTextWidth(text);
+                const textX = x + (maxWidth - textWidth) / 2;
+                const textY = offsetY + imgHeight + 15;
 
-              pdf.setFontSize(12);
-              pdf.text(text, textX, textY);
+                pdf.setFontSize(12);
+                pdf.text(text, textX, textY);
 
-              currentNumber++;
+                currentNumber++;
+              }
 
               // 진행 상태 업데이트
               const totalImages = imgDataList.length;
@@ -123,13 +126,25 @@ export default function Home() {
 
       {images.length > 0 && (
         <>
-          <input
-            type="number"
-            value={startNumber}
-            onChange={(e) => setStartNumber(e.target.value)}
-            placeholder="시작 번호를 입력하세요"
-            className="mb-4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black placeholder:text-black"
-          />
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              checked={includeNumbering}
+              onChange={(e) => setIncludeNumbering(e.target.checked)}
+              className="mr-2"
+            />
+            <label className="text-gray-700 font-medium">번호 매기기</label>
+          </div>
+
+          {includeNumbering && (
+            <input
+              type="number"
+              value={startNumber}
+              onChange={(e) => setStartNumber(e.target.value)}
+              placeholder="시작 번호를 입력하세요"
+              className="mb-4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black placeholder:text-black"
+            />
+          )}
 
           <button
             onClick={handleGeneratePDF}
