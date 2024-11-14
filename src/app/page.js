@@ -8,11 +8,13 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [startNumber, setStartNumber] = useState(1);
-  const [includeNumbering, setIncludeNumbering] = useState(true); // 번호 매기기 여부 상태 추가
+  const [includeNumbering, setIncludeNumbering] = useState(true);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    const validImages = files.filter((file) => file.type.startsWith("image/"));
+    const validImages = files.filter((file) =>
+      file.type.startsWith("image/")
+    );
     setImages(validImages);
     setProgress(0);
   };
@@ -34,14 +36,21 @@ export default function Home() {
     const positions = [
       { x: horizontalMargin, y: topMargin },
       { x: horizontalMargin + contentWidth / 2, y: topMargin },
-      { x: horizontalMargin, y: topMargin + contentHeight / 2 + verticalSpacing },
-      { x: horizontalMargin + contentWidth / 2, y: topMargin + contentHeight / 2 + verticalSpacing },
+      {
+        x: horizontalMargin,
+        y: topMargin + contentHeight / 2 + verticalSpacing,
+      },
+      {
+        x: horizontalMargin + contentWidth / 2,
+        y: topMargin + contentHeight / 2 + verticalSpacing,
+      },
     ];
 
     const imagePromises = images.map((imageFile) => {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (event) => resolve({ data: event.target.result, type: imageFile.type });
+        reader.onload = (event) =>
+          resolve({ data: event.target.result, type: imageFile.type });
         reader.onerror = (error) => reject(error);
         reader.readAsDataURL(imageFile);
       });
@@ -66,7 +75,10 @@ export default function Home() {
 
           await new Promise((resolve) => {
             img.onload = () => {
-              const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+              const ratio = Math.min(
+                maxWidth / img.width,
+                maxHeight / img.height
+              );
               const imgWidth = img.width * ratio;
               const imgHeight = img.height * ratio;
 
@@ -124,9 +136,27 @@ export default function Home() {
         className="file-input mb-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg cursor-pointer shadow-lg focus:outline-none hover:bg-gray-200"
       />
 
+      {/* 다운로드 버튼들을 항상 표시 */}
+      <div className="flex flex-col w-full gap-4">
+        <a
+          href="/sisimna.xlsx"
+          download
+          className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-md hover:bg-green-500 transition text-center"
+        >
+          시심나 장부 다운로드
+        </a>
+        <a
+          href="/request.xlsx"
+          download
+          className="w-full sm:w-auto px-6 py-3 bg-purple-600 text-white font-semibold rounded-full shadow-md hover:bg-purple-500 transition text-center"
+        >
+          지출결의서 다운로드
+        </a>
+      </div>
+
       {images.length > 0 && (
         <>
-          <div className="flex items-center mb-4">
+          <div className="flex items-center mt-4 mb-4">
             <input
               type="checkbox"
               checked={includeNumbering}
@@ -148,7 +178,7 @@ export default function Home() {
 
           <button
             onClick={handleGeneratePDF}
-            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-500 transition"
+            className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-500 transition text-center"
           >
             PDF 다운로드
           </button>
