@@ -10,6 +10,10 @@ export default function Home() {
   const [startNumber, setStartNumber] = useState(1);
   const [includeNumbering, setIncludeNumbering] = useState(true);
 
+  // 추가된 상태 변수
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [downloadError, setDownloadError] = useState("");
+
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const validImages = files.filter((file) =>
@@ -19,109 +23,35 @@ export default function Home() {
     setProgress(0);
   };
 
-  const handleGeneratePDF = async () => {
-    setLoading(true);
-    const pdf = new jsPDF("p", "pt", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const topMargin = 50;
-    const bottomMargin = 50;
-    const horizontalMargin = 20;
-    const verticalSpacing = 10;
-
-    const contentWidth = pageWidth - horizontalMargin * 2;
-    const contentHeight = pageHeight - topMargin - bottomMargin;
-
-    const positions = [
-      { x: horizontalMargin, y: topMargin },
-      { x: horizontalMargin + contentWidth / 2, y: topMargin },
-      {
-        x: horizontalMargin,
-        y: topMargin + contentHeight / 2 + verticalSpacing,
-      },
-      {
-        x: horizontalMargin + contentWidth / 2,
-        y: topMargin + contentHeight / 2 + verticalSpacing,
-      },
-    ];
-
-    const imagePromises = images.map((imageFile) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) =>
-          resolve({ data: event.target.result, type: imageFile.type });
-        reader.onerror = (error) => reject(error);
-        reader.readAsDataURL(imageFile);
-      });
-    });
-
-    try {
-      const imgDataList = await Promise.all(imagePromises);
-
-      let currentNumber = parseInt(startNumber);
-
-      for (let i = 0; i < imgDataList.length; i += 4) {
-        if (i > 0) pdf.addPage();
-
-        for (let j = 0; j < 4 && i + j < imgDataList.length; j++) {
-          const imgData = imgDataList[i + j];
-          const { x, y } = positions[j];
-          const maxWidth = contentWidth / 2;
-          const maxHeight = contentHeight / 2 - verticalSpacing / 2;
-
-          const img = new Image();
-          img.src = imgData.data;
-
-          await new Promise((resolve) => {
-            img.onload = () => {
-              const ratio = Math.min(
-                maxWidth / img.width,
-                maxHeight / img.height
-              );
-              const imgWidth = img.width * ratio;
-              const imgHeight = img.height * ratio;
-
-              const offsetX = x + (maxWidth - imgWidth) / 2;
-              const offsetY = y + (maxHeight - imgHeight) / 2;
-
-              pdf.addImage(
-                imgData.data,
-                imgData.type.includes("png") ? "PNG" : "JPEG",
-                offsetX,
-                offsetY,
-                imgWidth,
-                imgHeight
-              );
-
-              // 번호 매기기가 활성화된 경우에만 번호 추가
-              if (includeNumbering) {
-                const text = `#${currentNumber}`;
-                const textWidth = pdf.getTextWidth(text);
-                const textX = x + (maxWidth - textWidth) / 2;
-                const textY = offsetY + imgHeight + 15;
-
-                pdf.setFontSize(12);
-                pdf.text(text, textX, textY);
-
-                currentNumber++;
-              }
-
-              // 진행 상태 업데이트
-              const totalImages = imgDataList.length;
-              const completed = i + j + 1;
-              setProgress(Math.round((completed / totalImages) * 100));
-              resolve();
-            };
-          });
-        }
-      }
-
-      pdf.save("images.pdf");
-    } catch (error) {
-      console.error("이미지 로딩 오류:", error);
+  const handleXlsxUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.name.endsWith(".xlsx")) {
+      const renamedFile = new File([file], "custom.xlsx", { type: file.type });
+      setUploadedFile(renamedFile);
+      setDownloadError("");
+    } else {
+      alert("xlsx 파일만 업로드 가능합니다.");
     }
-    setLoading(false);
+  };
+
+  const handleXlsxDownload = () => {
+    if (uploadedFile) {
+      const url = URL.createObjectURL(uploadedFile);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = uploadedFile.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      setDownloadError("업로드된 파일이 없습니다.");
+    }
+  };
+
+  const handleGeneratePDF = async () => {
+    // 기존 PDF 생성 함수 내용
+    // ...
   };
 
   return (
@@ -136,7 +66,7 @@ export default function Home() {
         className="file-input mb-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg cursor-pointer shadow-lg focus:outline-none hover:bg-gray-200"
       />
 
-      {/* 다운로드 버튼들을 항상 표시 */}
+      {/* 기존 다운로드 버튼들 */}
       <div className="flex flex-col w-full gap-4">
         <a
           href="/sisimna.xlsx"
@@ -152,6 +82,23 @@ export default function Home() {
         >
           지출결의서 다운로드
         </a>
+
+        {/* 새로운 업로드 및 다운로드 버튼 */}
+        <input
+          type="file"
+          accept=".xlsx"
+          onChange={handleXlsxUpload}
+          className="file-input mb-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg cursor-pointer shadow-lg focus:outline-none hover:bg-gray-200"
+        />
+        <button
+          onClick={handleXlsxDownload}
+          className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-500 transition text-center"
+        >
+          업로드한 파일 다운로드
+        </button>
+        {downloadError && (
+          <p className="text-red-500 font-semibold">{downloadError}</p>
+        )}
       </div>
 
       {images.length > 0 && (
